@@ -17,8 +17,6 @@ from .config import CfgNode as CN
 
 _C = CN()
 
-# The version number, to upgrade from old configs to new ones if any
-# changes happen. It's recommended to keep a VERSION in your config file.
 _C.VERSION = 2
 
 _C.MODEL = CN()
@@ -32,7 +30,7 @@ _C.MODEL.META_ARCHITECTURE = "GeneralizedRCNN"
 # to be loaded to the model. You can find available models in the model zoo.
 _C.MODEL.WEIGHTS = ""
 
-# Values to be used for image normalization (BGR order, since INPUT.FORMAT defaults to BGR).
+# Values to be used for image normalization (BGR order).
 # To train on images of different number of channels, just set different mean & std.
 # Default values are the mean pixel value from ImageNet: [103.53, 116.28, 123.675]
 _C.MODEL.PIXEL_MEAN = [103.530, 116.280, 123.675]
@@ -179,11 +177,7 @@ _C.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.5, 1.0, 2.0]]
 # list[float], the angle in degrees, for each input feature map.
 # ANGLES[i] specifies the list of angles for IN_FEATURES[i].
 _C.MODEL.ANCHOR_GENERATOR.ANGLES = [[-90, 0, 90]]
-# Relative offset between the center of the first anchor and the top-left corner of the image
-# Units: fraction of feature map stride (e.g., 0.5 means half stride)
-# Allowed values are floats in [0, 1) range inclusive.
-# Recommended value is 0.5, although it is not expected to affect model accuracy.
-_C.MODEL.ANCHOR_GENERATOR.OFFSET = 0.0
+
 
 # ---------------------------------------------------------------------------- #
 # RPN options
@@ -271,6 +265,7 @@ _C.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.5
 # train ROI heads.
 _C.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT = True
 
+
 # ---------------------------------------------------------------------------- #
 # Box Head
 # ---------------------------------------------------------------------------- #
@@ -299,8 +294,6 @@ _C.MODEL.ROI_BOX_HEAD.CONV_DIM = 256
 _C.MODEL.ROI_BOX_HEAD.NORM = ""
 # Whether to use class agnostic for bbox regression
 _C.MODEL.ROI_BOX_HEAD.CLS_AGNOSTIC_BBOX_REG = False
-# If true, RoI heads use bounding boxes predicted by the box head rather than proposal boxes.
-_C.MODEL.ROI_BOX_HEAD.TRAIN_ON_PRED_BOXES = False
 
 # ---------------------------------------------------------------------------- #
 # Cascaded Box Head
@@ -479,6 +472,14 @@ _C.MODEL.RESNETS.DEFORM_MODULATED = False
 # Number of groups in deformable conv.
 _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 
+# ---------------------------------------------------------------------------- #
+# Inception
+# Note that parts of a inception may be used for both the backbone and the head
+# These options apply to both
+# ---------------------------------------------------------------------------- #
+_C.MODEL.INCEPTION = CN()
+_C.MODEL.INCEPTION.OUT_FEATURES = ['res3', 'res4', 'res5']
+_C.MODEL.INCEPTION.STEM_OUT_CHANNELS = 64
 
 # ---------------------------------------------------------------------------- #
 # Solver
@@ -507,7 +508,6 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 1000
 _C.SOLVER.WARMUP_ITERS = 1000
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-# Save a checkpoint after every this number of iterations
 _C.SOLVER.CHECKPOINT_PERIOD = 5000
 
 # Number of images per batch across all machines.
@@ -563,9 +563,6 @@ _C.SEED = -1
 # for about 10k iterations. It usually hurts total time, but can benefit for certain models.
 # If input images have the same or similar sizes, benchmark is often helpful.
 _C.CUDNN_BENCHMARK = False
-# The period (in terms of steps) for minibatch visualization at train time.
-# Set to 0 to disable.
-_C.VIS_PERIOD = 0
 
 # global config is for quick hack purposes.
 # You can set them in command line or config files,
