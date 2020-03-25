@@ -483,6 +483,17 @@ _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 _C.MODEL.INCEPTION = CN()
 _C.MODEL.INCEPTION.OUT_FEATURES = ['res3', 'res4', 'res5']
 _C.MODEL.INCEPTION.STEM_OUT_CHANNELS = 64
+_C.MODEL.INCEPTION.WEIGHTS = ''
+
+# ---------------------------------------------------------------------------- #
+# EfficientNet
+# Note that parts of a EfficientNet may be used for both the backbone and the head
+# These options apply to both
+# ---------------------------------------------------------------------------- #
+_C.MODEL.EFFICIENTNET = CN()
+_C.MODEL.EFFICIENTNET.OUT_FEATURES = ['res3', 'res4', 'res5']
+_C.MODEL.EFFICIENTNET.NAME = 'efficientnet-b7'
+_C.MODEL.EFFICIENTNET.WEIGHTS = ''
 
 # ---------------------------------------------------------------------------- #
 # Solver
