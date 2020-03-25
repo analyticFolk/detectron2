@@ -38,7 +38,12 @@ def flop_count_operators(
     class WrapModel(nn.Module):
         def __init__(self, model):
             super().__init__()
-            self.model = model
+            if isinstance(
+                model, (nn.parallel.distributed.DistributedDataParallel, nn.DataParallel)
+            ):
+                self.model = model.module
+            else:
+                self.model = model
 
         def forward(self, image):
             # jit requires the input/output to be Tensors
@@ -65,5 +70,8 @@ def flop_count_operators(
     old_train = model.training
     with torch.no_grad():
         ret = flop_count(WrapModel(model).train(False), (tensor_input,), **kwargs)
+        # compatible with change in fvcore
+        if isinstance(ret, tuple):
+            ret = ret[0]
     model.train(old_train)
     return ret

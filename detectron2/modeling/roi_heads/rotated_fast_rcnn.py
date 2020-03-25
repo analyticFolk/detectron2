@@ -77,7 +77,7 @@ def fast_rcnn_inference_rotated(
         )
         for scores_per_image, boxes_per_image, image_shape in zip(scores, boxes, image_shapes)
     ]
-    return tuple(list(x) for x in zip(*result_per_image))
+    return [x[0] for x in result_per_image], [x[1] for x in result_per_image]
 
 
 def fast_rcnn_inference_single_image_rotated(
@@ -272,7 +272,8 @@ class RROIHeads(StandardROIHeads):
         Forward logic of the box prediction branch.
 
         Args:
-            features (dict[str,Tensor]): #level input features for box prediction
+            features (dict[str, Tensor]): mapping from feature map names to tensor.
+                Same as in :meth:`ROIHeads.forward`.
             proposals (list[Instances]): the per-image object proposals with
                 their matching ground truth.
                 Each has fields "proposal_boxes", and "objectness_logits",
