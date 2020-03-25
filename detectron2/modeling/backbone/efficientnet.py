@@ -216,7 +216,7 @@ class EfficientNet(Backbone):
                 drop_connect_rate *= float(idx) / len(self._blocks)
             x = block(x, drop_connect_rate=drop_connect_rate)
             if idx in self._out_indices_to_feature:
-                name = self._out_feature_indices[idx]
+                name = self._out_indices_to_feature[idx]
                 if name in self._out_features:
                     outputs[name] = x
         # Head
