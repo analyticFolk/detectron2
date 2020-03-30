@@ -26,7 +26,7 @@ class FPN(Backbone):
     """
 
     def __init__(
-        self, bottom_up, in_features, out_channels, norm="", top_block=None, fuse_type="sum"
+        self, bottom_up, in_features, out_channels, norm="", top_block=None, fuse_type="sum", bidir=False
     ):
         """
         Args:
@@ -50,9 +50,12 @@ class FPN(Backbone):
             fuse_type (str): types for fusing the top down features and the lateral
                 ones. It can be "sum" (default), which sums up element-wise; or "avg",
                 which takes the element-wise mean of the two.
+            bidir (bool): To use bottom-up FPN along with top-down FPN.  Default is false (top-down only)
         """
         super(FPN, self).__init__()
         assert isinstance(bottom_up, Backbone)
+
+        self.bidir = bidir
 
         # Feature map strides and channels from the bottom up network (e.g. ResNet)
         input_shapes = bottom_up.output_shape()
@@ -62,6 +65,10 @@ class FPN(Backbone):
         _assert_strides_are_log2_contiguous(in_strides)
         lateral_convs = []
         output_convs = []
+
+        if bidir:
+            self.bottom_up_lateral_convs = []
+            self.bottom_up_output_convs = []
 
         use_bias = norm == ""
         for idx, in_channels in enumerate(in_channels):
@@ -88,6 +95,31 @@ class FPN(Backbone):
 
             lateral_convs.append(lateral_conv)
             output_convs.append(output_conv)
+
+            if bidir:
+                bottom_up_lateral_norm = get_norm(norm, out_channels)
+                bottom_up_output_norm = get_norm(norm, out_channels)
+
+                bottom_up_lateral_conv = Conv2d(
+                    in_channels, out_channels, kernel_size=1, bias=use_bias, norm=bottom_up_lateral_norm
+                )
+                bottom_up_output_conv = Conv2d(
+                    out_channels,
+                    out_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=use_bias,
+                    norm=bottom_up_output_norm,
+                )
+                weight_init.c2_xavier_fill(bottom_up_lateral_conv)
+                weight_init.c2_xavier_fill(bottom_up_output_conv)
+                self.add_module("fpn_bottom_up_lateral{}".format(stage), bottom_up_lateral_conv)
+                self.add_module("fpn_bottom_up__output{}".format(stage), bottom_up_output_conv)
+
+                self.bottom_up_lateral_convs.append(bottom_up_lateral_conv)
+                self.bottom_up_output_convs.append(bottom_up_output_conv)
+
         # Place convs into top-down order (from low to high resolution)
         # to make the top-down computation in forward clearer.
         self.lateral_convs = lateral_convs[::-1]
@@ -140,6 +172,23 @@ class FPN(Backbone):
             if self._fuse_type == "avg":
                 prev_features /= 2
             results.insert(0, output_conv(prev_features))
+
+        if self.bidir:
+            x_td = [bottom_up_features[f] for f in self.in_features]
+            td_results = []
+            prev_features = self.bottom_up_lateral_convs[0](x_td[0])
+            td_results.append(self.bottom_up_output_convs[0](prev_features))
+            for features, lateral_conv, output_conv in zip(
+                    x_td[1:], self.bottom_up_lateral_convs[1:], self.bottom_up_output_convs[1:]
+            ):
+                bottom_up_fpn_features = F.max_pool2d(prev_features, kernel_size=1, stride=2)
+                lateral_features = lateral_conv(features)
+                prev_features = lateral_features + bottom_up_fpn_features
+                if self._fuse_type == 'avg':
+                    prev_features /= 2
+                td_results.append(output_conv(prev_features))
+            for i in range(len(results)):
+                results[i] += td_results[i]
 
         if self.top_block is not None:
             top_block_in_feature = bottom_up_features.get(self.top_block.in_feature, None)
@@ -223,6 +272,7 @@ def build_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelMaxPool(),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone
 
@@ -247,6 +297,7 @@ def build_retinanet_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelP6P7(in_channels_p6p7, out_channels),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone
 
@@ -269,6 +320,7 @@ def build_inception_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelMaxPool(),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone
 
@@ -293,6 +345,7 @@ def build_retinanet_inception_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelP6P7(in_channels_p6p7, out_channels),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone
 
@@ -315,6 +368,7 @@ def build_efficientnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelMaxPool(),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone
 
@@ -339,5 +393,6 @@ def build_retinanet_efficientnet_fpn_backbone(cfg, input_shape: ShapeSpec):
         norm=cfg.MODEL.FPN.NORM,
         top_block=LastLevelP6P7(in_channels_p6p7, out_channels),
         fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+        bidir=cfg.MODEL.FPN.BIDIR,
     )
     return backbone

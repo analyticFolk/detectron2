@@ -145,6 +145,8 @@ _C.MODEL.FPN.NORM = ""
 # Types for fusing the FPN top-down and lateral features. Can be either "sum" or "avg"
 _C.MODEL.FPN.FUSE_TYPE = "sum"
 
+# Use bottom-up along with top-down pyramid
+_C.MODEL.FPN.BIDIR = False
 
 # ---------------------------------------------------------------------------- #
 # Proposal generator options
