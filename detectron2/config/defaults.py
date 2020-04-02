@@ -19,6 +19,8 @@ _C = CN()
 
 _C.VERSION = 2
 
+_C.VIS_PERIOD = 0
+
 _C.MODEL = CN()
 _C.MODEL.LOAD_PROPOSALS = False
 _C.MODEL.MASK_ON = False
@@ -182,7 +184,7 @@ _C.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = [[0.5, 1.0, 2.0]]
 # list[float], the angle in degrees, for each input feature map.
 # ANGLES[i] specifies the list of angles for IN_FEATURES[i].
 _C.MODEL.ANCHOR_GENERATOR.ANGLES = [[-90, 0, 90]]
-
+_C.MODEL.ANCHOR_GENERATOR.OFFSET = 0
 
 # ---------------------------------------------------------------------------- #
 # RPN options
