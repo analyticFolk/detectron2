@@ -354,7 +354,7 @@ def build_inception_backbone(cfg, input_shape):
     # fmt: off
     out_features        = cfg.MODEL.INCEPTION.OUT_FEATURES
     num_classes         = cfg.MODEL.RETINANET.NUM_CLASSES
-    pretrained_weights  = cfg.MODEL.WEIGHTS
+    pretrained_weights  = cfg.MODEL.INCEPITION.WEIGHTS
     # fmt: on
 
     stages = []
