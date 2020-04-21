@@ -462,4 +462,6 @@ def build_transform_gen(cfg, is_train):
     if is_train:
         tfm_gens.append(T.RandomFlip())
         logger.info("TransformGens used in training: " + str(tfm_gens))
+        if cfg.INPUT.COLOR_JITTER:
+            tfm_gens.append(T.RandomLighting(cfg.INPUT.COLOR_JITTER.SCALE))
     return tfm_gens

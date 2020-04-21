@@ -69,7 +69,10 @@ _C.INPUT.CROP.TYPE = "relative_range"
 # Size of crop in range (0, 1] if CROP.TYPE is "relative" or "relative_range" and in number of
 # pixels if CROP.TYPE is "absolute"
 _C.INPUT.CROP.SIZE = [0.9, 0.9]
-
+# 'True' if color jitter used for data augmentation
+_C.INPUT.COLOR_JITTER = CN({"ENABLED": False})
+# standard deviation value for normal distribution
+_C.INPUT.COLOR_JITTER.SCALE = 1.0
 
 # Whether the model needs RGB, YUV, HSV etc.
 # Should be one of the modes defined here, as we use PIL to read the image:
