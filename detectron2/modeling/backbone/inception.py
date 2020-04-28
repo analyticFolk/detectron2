@@ -311,7 +311,7 @@ class InceptionV4(Backbone):
 
     def logits(self, features):
         # Allows image of any size to be processed
-        adaptiveAvgPoolWidth = features.shape[2]
+        adaptiveAvgPoolWidth = min(features.shape[2:])
         x = F.avg_pool2d(features, kernel_size=adaptiveAvgPoolWidth)
         x = x.view(x.size(0), -1)
         x = self.last_linear(x)
@@ -354,7 +354,7 @@ def build_inception_backbone(cfg, input_shape):
     # fmt: off
     out_features        = cfg.MODEL.INCEPTION.OUT_FEATURES
     num_classes         = cfg.MODEL.RETINANET.NUM_CLASSES
-    pretrained_weights  = cfg.MODEL.INCEPITION.WEIGHTS
+    #pretrained_weights  = cfg.MODEL.INCEPTION.WEIGHTS
     # fmt: on
 
     stages = []
@@ -363,6 +363,6 @@ def build_inception_backbone(cfg, input_shape):
                         num_classes=num_classes,
                         out_features=out_features)
     model.freeze(freeze_at)
-    if len(pretrained_weights) > 0:
-        model.load_state_dict(torch.load(pretrained_weights))
+    #if len(pretrained_weights) > 0:
+    #    model.load_state_dict(torch.load(pretrained_weights))
     return model
