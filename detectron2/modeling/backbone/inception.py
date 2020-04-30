@@ -311,7 +311,7 @@ class InceptionV4(Backbone):
 
     def logits(self, features):
         # Allows image of any size to be processed
-        adaptiveAvgPoolWidth = min(features.shape[2:])
+        adaptiveAvgPoolWidth = features.shape[2:]
         x = F.avg_pool2d(features, kernel_size=adaptiveAvgPoolWidth)
         x = x.view(x.size(0), -1)
         x = self.last_linear(x)
