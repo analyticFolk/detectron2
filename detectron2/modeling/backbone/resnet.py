@@ -14,6 +14,11 @@ from detectron2.layers import (
     get_norm,
 )
 
+from .swish import (
+    Swish,
+    MemoryEfficientSwish,
+)
+
 from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
 
@@ -62,6 +67,7 @@ class BottleneckBlock(ResNetBlockBase):
         norm="BN",
         stride_in_1x1=False,
         dilation=1,
+        activation='relu'
     ):
         """
         Args:
@@ -135,12 +141,17 @@ class BottleneckBlock(ResNetBlockBase):
         # TODO this somehow hurts performance when training GN models from scratch.
         # Add it as an option when we need to use this code to train a backbone.
 
+        # activation
+        self._activation = F.relu_
+        if activation == 'swish':
+            self._activation = MemoryEfficientSwish()
+
     def forward(self, x):
         out = self.conv1(x)
-        out = F.relu_(out)
+        out = self._activation(out)
 
         out = self.conv2(out)
-        out = F.relu_(out)
+        out = self._activation(out)
 
         out = self.conv3(out)
 
@@ -150,7 +161,7 @@ class BottleneckBlock(ResNetBlockBase):
             shortcut = x
 
         out += shortcut
-        out = F.relu_(out)
+        out = self._activation(out)
         return out
 
 
@@ -168,6 +179,7 @@ class DeformBottleneckBlock(ResNetBlockBase):
         dilation=1,
         deform_modulated=False,
         deform_num_groups=1,
+        activation='relu'
     ):
         """
         Similar to :class:`BottleneckBlock`, but with deformable conv in the 3x3 convolution.
@@ -242,9 +254,14 @@ class DeformBottleneckBlock(ResNetBlockBase):
         nn.init.constant_(self.conv2_offset.weight, 0)
         nn.init.constant_(self.conv2_offset.bias, 0)
 
+        # activation
+        self._activation = F.relu_
+        if activation == 'swish':
+            self._activation = MemoryEfficientSwish()
+
     def forward(self, x):
         out = self.conv1(x)
-        out = F.relu_(out)
+        out = self._activation(out)
 
         if self.deform_modulated:
             offset_mask = self.conv2_offset(out)
@@ -255,7 +272,7 @@ class DeformBottleneckBlock(ResNetBlockBase):
         else:
             offset = self.conv2_offset(out)
             out = self.conv2(out, offset)
-        out = F.relu_(out)
+        out = self._activation(out)
 
         out = self.conv3(out)
 
@@ -265,7 +282,7 @@ class DeformBottleneckBlock(ResNetBlockBase):
             shortcut = x
 
         out += shortcut
-        out = F.relu_(out)
+        out = self._activation(out)
         return out
 
 
@@ -291,7 +308,7 @@ def make_stage(block_class, num_blocks, first_stride, **kwargs):
 
 
 class BasicStem(nn.Module):
-    def __init__(self, in_channels=3, out_channels=64, norm="BN"):
+    def __init__(self, in_channels=3, out_channels=64, norm="BN", activation='relu'):
         """
         Args:
             norm (str or callable): a callable that takes the number of
@@ -309,10 +326,13 @@ class BasicStem(nn.Module):
             norm=get_norm(norm, out_channels),
         )
         weight_init.c2_msra_fill(self.conv1)
+        self._activation = F.relu_
+        if activation == 'swish':
+            self._activation = MemoryEfficientSwish()
 
     def forward(self, x):
         x = self.conv1(x)
-        x = F.relu_(x)
+        x = self._activation(x)
         x = F.max_pool2d(x, kernel_size=3, stride=2, padding=1)
         return x
 
@@ -438,6 +458,7 @@ def build_resnet_backbone(cfg, input_shape):
     deform_on_per_stage = cfg.MODEL.RESNETS.DEFORM_ON_PER_STAGE
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
+    activation          = cfg.MODEL.RESNETS.ACTIVATION
     # fmt: on
     assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
 
@@ -462,6 +483,7 @@ def build_resnet_backbone(cfg, input_shape):
             "norm": norm,
             "stride_in_1x1": stride_in_1x1,
             "dilation": dilation,
+            "activation": activation,
         }
         if deform_on_per_stage[idx]:
             stage_kargs["block_class"] = DeformBottleneckBlock

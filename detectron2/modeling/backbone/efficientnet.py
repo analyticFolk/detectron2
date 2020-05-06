@@ -10,12 +10,10 @@ from .efficientnet_utils import (
     get_model_params,
     efficientnet_params,
     load_pretrained_weights,
+)
+from .swish import (
     Swish,
     MemoryEfficientSwish,
-)
-
-from detectron2.layers import (
-    ShapeSpec,
 )
 
 from .backbone import Backbone

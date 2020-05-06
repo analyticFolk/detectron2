@@ -481,6 +481,8 @@ _C.MODEL.RESNETS.DEFORM_ON_PER_STAGE = [False, False, False, False]
 _C.MODEL.RESNETS.DEFORM_MODULATED = False
 # Number of groups in deformable conv.
 _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
+# activation to use ('relu', 'swish')
+_C.MODEL.RESNETS.ACTIVATION = 'relu'
 
 # ---------------------------------------------------------------------------- #
 # Inception
