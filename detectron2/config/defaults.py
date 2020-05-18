@@ -73,6 +73,14 @@ _C.INPUT.CROP.SIZE = [0.9, 0.9]
 _C.INPUT.COLOR_JITTER = CN({"ENABLED": False})
 # standard deviation value for normal distribution
 _C.INPUT.COLOR_JITTER.SCALE = 1.0
+# contrast
+_C.INPUT.CONTRAST = CN({"ENABLED": False})
+# range of values for contrast
+_C.INPUT.CONTRAST.RANGE = [0.5, 1.0]
+# saturation
+_C.INPUT.SATURATION = CN({"ENABLED": False})
+# range of values for saturation
+_C.INPUT.SATURATION.RANGE = [0.5, 1.0]
 
 # Whether the model needs RGB, YUV, HSV etc.
 # Should be one of the modes defined here, as we use PIL to read the image:

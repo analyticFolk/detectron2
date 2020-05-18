@@ -461,7 +461,13 @@ def build_transform_gen(cfg, is_train):
     tfm_gens.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
     if is_train:
         tfm_gens.append(T.RandomFlip())
-        logger.info("TransformGens used in training: " + str(tfm_gens))
         if cfg.INPUT.COLOR_JITTER:
             tfm_gens.append(T.RandomLighting(cfg.INPUT.COLOR_JITTER.SCALE))
+        if cfg.INPUT.SATURATION:
+            sat_min, sat_max = cfg.INPUT.SATURATION.RANGE
+            tfm_gens.append(T.RandomSaturation(sat_min, sat_max))
+        if cfg.INPUT.CONTRAST:
+            contrast_min, contrast_max = cfg.INPUT.CONTRAST.RANGE
+            tfm_gens.append(T.RandomContrast(contrast_min, contrast_max))
+        logger.info("TransformGens used in training: " + str(tfm_gens))
     return tfm_gens
