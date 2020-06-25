@@ -11,6 +11,7 @@ from detectron2.layers import ShapeSpec, batched_nms, cat
 from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
+from detectron2.utils.box_ops import *
 
 from ..anchor_generator import build_anchor_generator
 from ..backbone import build_backbone
@@ -186,7 +187,7 @@ class RetinaNet(nn.Module):
 
         if self.training:
             gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
-            losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta)
+            losses = self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta, anchors)
 
             if self.vis_period > 0:
                 storage = get_event_storage()
@@ -207,7 +208,7 @@ class RetinaNet(nn.Module):
                 processed_results.append({"instances": r})
             return processed_results
 
-    def losses(self, gt_classes, gt_anchors_deltas, pred_class_logits, pred_anchor_deltas):
+    def losses(self, gt_classes, gt_anchors_deltas, pred_class_logits, pred_anchor_deltas, anchors):
         """
         Args:
             For `gt_classes` and `gt_anchors_deltas` parameters, see
@@ -259,7 +260,13 @@ class RetinaNet(nn.Module):
             reduction="sum",
         ) / max(1, self.loss_normalizer)
 
-        return {"loss_cls": loss_cls, "loss_box_reg": loss_box_reg}
+        anchor_boxes = cat([Boxes.cat(anchors_i).tensor for anchors_i in anchors])
+        gt_boxes = self.box2box_transform.apply_deltas(gt_anchors_deltas, anchor_boxes)
+        pred_boxes = self.box2box_transform.apply_deltas(pred_anchor_deltas, anchor_boxes)
+        giou_loss = (1.0 - torch.diag(generalized_box_iou(gt_boxes[foreground_idxs], pred_boxes[foreground_idxs])))
+        giou_loss = giou_loss.sum() / gt_classes_target.sum()
+        
+        return {"loss_cls": loss_cls, "loss_box_reg": loss_box_reg, 'loss_giou': giou_loss}
 
     @torch.no_grad()
     def get_ground_truth(self, anchors, targets):
